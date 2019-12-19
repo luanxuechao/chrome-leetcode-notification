@@ -1,8 +1,10 @@
 import chromep from 'chrome-promise'
+import * as Question from '../resources/question'
 console.log('background !')
 const options = {
   open: true,
   urls: [''],
+  leetcodeHost: 'https://leetcode.com/api',
   time: 0.1
 }
 const start = false
@@ -15,11 +17,9 @@ chrome.tabs.onActivated.addListener(function (activeInfo) {
 })
 chrome.runtime.onInstalled.addListener(function () {
   chromep.storage.local.set({options: JSON.stringify(options)}).then(function () {
-    alert('options set')
     return chromep.storage.local.get('options')
-  }).then(function (items) {
-    alert(JSON.stringify(items))
   })
+  Question.getAllQuestions(options.leetcodeHost)
 })
 
 var AlertNotification = async function (tabId) {
