@@ -63,7 +63,7 @@ export default {
         _this.topicTags = value.question.topicTags
         _this.difficulty = value.question.difficulty
         const length = await getAllQuestionsLength()
-        _this.nextDisable = parseInt(value.question.questionFrontendId) > length
+        _this.nextDisable = parseInt(value.question.questionFrontendId) >= length
         _this.preDisable = parseInt(value.question.questionFrontendId) === 1
         _this.input = ''
         _this.backTop()
@@ -106,11 +106,9 @@ export default {
       this.getQuestionById(--id)
     },
     handleSelect (item) {
-      console.log(item)
       this.getQuestionById(item.questionId)
     },
     openLeetcode () {
-      console.log(this.question.questionFrontendId)
       findQuestionById(parseInt(this.question.questionFrontendId)).then((value) => {
         console.log(value)
         window.open(`https://leetcode.com/problems/${value.stat.question__title_slug}`)

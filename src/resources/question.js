@@ -39,10 +39,7 @@ export async function getQuestionByDescription (id) {
 
 export async function findQuestionById (id) {
   let results = await getAllQuestions()
-  console.log(results)
-  console.log(id)
   const ret = _.find(results, (question) => { return question.stat.frontend_question_id === id })
-  console.log(ret)
   return ret
 }
 export async function getAllQuestionsLength () {
