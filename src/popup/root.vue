@@ -9,24 +9,135 @@
             el-tag(type="danger" style="margin:0 3px" v-show="difficulty === 'Hard'" size ="mini" effect="plain") Hard
           div(class="question_tag")
             el-tag(effect="light" style="margin:0 3px" :key="tag.name" v-for="tag in topicTags" size ="mini") {{tag.name}}
-          div(class="question_header_button clear-float")
-            el-autocomplete(class="inline-input search_input" v-model="input1" :fetch-suggestions="querySearch" placeholder="search id"  prefix-icon="el-icon-search" :trigger-on-focus="false" @select="handleSelect")
+          div(class="question_footer clear-float ")
+            el-button-group(class="footer_button")
+              el-button(type="primary" @click="preQuestion", :disabled="preDisable" plain =true size="small" icon="el-icon-arrow-left")
+              el-button(type="primary" @click="nextQuestion" :disabled="nextDisable" plain =true size="small" icon="el-icon-arrow-right")
+              el-button(type="primary" @click="openLeetcode" plain =true size="small" icon="el-icon-edit")
+              el-button(type="primary" @click="refresh" plain =true size="small" icon="el-icon-refresh")
+          div(class="question_header_button")
+              el-autocomplete(class="inline-input" style="width: 100%;" :fetch-suggestions="querySearch" :trigger-on-focus="false" v-model="input" @select="handleSelect"  placeholder="search id"  prefix-icon="el-icon-search" )
         div(class="question_description")
           div(class="question_content" v-show = "!isPaidOnly" v-html="content")
           div(class="question_lock" v-show = "isPaidOnly")
-              i(class="el-icon-lock")
+              div(class="question_lock_content")
+                i(class="el-icon-lock" style="font-size:50px")
+                p Subscribe to unlock.
         div(class="question_footer clear-float ")
           el-button-group(class="footer_button")
-            el-button(type="primary" @click="preQuestion", plain =true size="small" icon="el-icon-arrow-left")
-            el-button(type="primary" @click="nextQuestion" plain =true size="small" icon="el-icon-arrow-right")
-            el-button(type="primary"  plain =true size="small" icon="el-icon-edit")
-            el-button(type="primary" plain =true size="small" icon="el-icon-refresh")
+            el-button(type="primary" @click="preQuestion", :disabled="preDisable" plain =true size="small" icon="el-icon-arrow-left")
+            el-button(type="primary" @click="nextQuestion" :disabled="nextDisable" plain =true size="small" icon="el-icon-arrow-right")
+            el-button(type="primary" @click="openLeetcode" plain =true size="small" icon="el-icon-edit")
+            el-button(type="primary" @click="refresh" plain =true size="small" icon="el-icon-refresh")
 
            
          
           
 
 </template>
+
+<script>
+import {getQuestionByDescription, findQuestionById, fuzzySearch, getAllQuestionsLength, refreshTotal} from '../resources/question'
+import chromep from 'chrome-promise'
+export default {
+  data: () => {
+    return {isPaidOnly: false, scrollTop: 0, preDisable: false, input: '111', nextDisable: false, content: '', topicTags: [], difficulty: 'Easy', question: {questionId: '', questionFrontendId: '', title: ''}}
+  },
+  computed: { },
+  created () {
+    const _this = this
+    chromep.storage.local.get('lastQuestionId').then((question) => {
+      return _this.getQuestionById(parseInt(question.lastQuestionId) < 1200 ? parseInt(question.lastQuestionId) : 1)
+    }).catch((error) => {
+      console.log(error)
+      alert(JSON.stringify(error))
+    })
+  },
+  mounted () { },
+  methods: {
+    getQuestionById (id) {
+      const _this = this
+      getQuestionByDescription(id).then(async (value) => {
+        _this.isPaidOnly = value.question.isPaidOnly
+        _this.content = value.question.content
+        _this.topicTags = value.question.topicTags
+        _this.difficulty = value.question.difficulty
+        const length = await getAllQuestionsLength()
+        _this.nextDisable = parseInt(value.question.questionFrontendId) > length
+        _this.preDisable = parseInt(value.question.questionFrontendId) === 1
+        _this.input = ''
+        _this.backTop()
+        _this.question = {questionId: value.question.questionId, questionFrontendId: value.question.questionFrontendId, title: value.question.title}
+        return chromep.storage.local.set({'lastQuestionId': value.question.questionId})
+      }).catch((error) => {
+        console.log(error)
+        alert(JSON.stringify(error))
+      })
+    },
+    querySearch (queryString, cb) {
+      console.log(queryString)
+
+      if (!queryString) {
+        const result = []
+        return cb(result)
+      }
+
+      fuzzySearch(queryString).then((values) => {
+        cb(values)
+      })
+    },
+    backTop () {
+      const that = this
+      let timer = setInterval(() => {
+        let ispeed = Math.floor(-that.scrollTop / 5)
+        document.documentElement.scrollTop = document.body.scrollTop = that.scrollTop + ispeed
+        console.log(that.scrollTop)
+        if (that.scrollTop === 0) {
+          clearInterval(timer)
+        }
+      }, 16)
+    },
+    nextQuestion () {
+      let id = parseInt(this.question.questionFrontendId)
+      this.getQuestionById(++id)
+    },
+    preQuestion () {
+      let id = parseInt(this.question.questionFrontendId)
+      this.getQuestionById(--id)
+    },
+    handleSelect (item) {
+      console.log(item)
+      this.getQuestionById(item.questionId)
+    },
+    openLeetcode () {
+      console.log(this.question.questionFrontendId)
+      findQuestionById(parseInt(this.question.questionFrontendId)).then((value) => {
+        console.log(value)
+        window.open(`https://leetcode.com/problems/${value.stat.question__title_slug}`)
+      })
+    },
+    scrollToTop () {
+      const that = this
+      let scrollTop = window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop
+      that.scrollTop = scrollTop
+      if (that.scrollTop > 60) {
+        that.btnFlag = true
+      } else {
+        that.btnFlag = false
+      }
+    },
+    refresh () {
+      const _this = this
+      refreshTotal().then((value) => {
+        _this.$message({
+          message: '本地题库刷新成功',
+          type: 'success'
+        })
+      })
+    }
+  }
+}
+</script>
 <style scoped>
 .pop {
   width: 500px;
@@ -45,6 +156,18 @@
 .question_tag {
   margin-top: 10px;
 }
+.question_lock {
+  width: 500px;
+  height: 300px;
+  font-size: 28px;
+  font-weight: 400;
+}
+.question_lock_content {
+    color: rgb(33, 33, 33);
+    width: 100%;
+    text-align: center;
+    margin: 67px auto;
+}
 .question_description {
   margin: 1em 0;
   font-size: 14px;
@@ -62,14 +185,18 @@
   margin-bottom: 1em;
   overflow: auto;
 }
+.question_header_button {
+  margin-top: 10px;
+   width: 500px;
+}
 .question_header_button .search_input {
-  float: right;
-  width: 200px;
+  display: inline-block;
+  width: 500px;
 }
 
 .question_footer {
-  margin-top: 20px;
-  margin-bottom: 20px;
+  margin-top: 10px;
+  margin-bottom: 10px;
   width: 100%;
  
 }
@@ -84,70 +211,4 @@
   height: 0;
   overflow: hidden;}
 .clear-float{zoom: 1;}
-</style>>
-<script>
-import {getQuestionByDescription, fuzzySearch, getAllQuestionsLength} from '../resources/question'
-import chromep from 'chrome-promise'
-export default {
-  data: () => {
-    return {isPaidOnly: false, input1: '', content: '', topicTags: [], difficulty: 'Easy', question: {questionId: '', questionFrontendId: '', title: ''}}
-  },
-  computed: { },
-  created () {
-    const _this = this
-    chromep.storage.local.get('lastQuestionId').then((question) => {
-      return _this.getQuestionById(parseInt(question.lastQuestionId) < 1200 ? parseInt(question.lastQuestionId) : 1)
-    }).catch((error) => {
-      console.log(error)
-      alert(JSON.stringify(error))
-    })
-  },
-  mounted () { },
-  methods: {
-    getQuestionById (id) {
-      const _this = this
-      console.log(id)
-      getQuestionByDescription(id).then((value) => {
-        console.log(value)
-        _this.isPaidOnly = value.question.isPaidOnly
-        _this.content = value.question.content
-        _this.topicTags = value.question.topicTags
-        _this.difficulty = value.question.difficulty
-        _this.question = {questionId: value.question.questionId, questionFrontendId: value.question.questionFrontendId, title: value.question.title}
-        return chromep.storage.local.set({'lastQuestionId': value.question.questionId})
-      }).catch((error) => {
-        console.log(error)
-        alert(JSON.stringify(error))
-      })
-    },
-    querySearch (queryString, cb) {
-      fuzzySearch(queryString).then((value) => {
-        const results = []
-        for (const i in value) {
-          if (i > 20) {
-            break
-          }
-          results.push({value: `${value[i].stat.frontend_question_id}.${value[i].stat.question__title}`, questionId: value[i].stat.frontend_question_id})
-        }
-        cb(results)
-      })
-    },
-    nextQuestion () {
-      getAllQuestionsLength().then((length) => {
-        if (this.question.questionId < length) {
-          this.getQuestionById(++this.question.questionId)
-        }
-      })
-    },
-    preQuestion () {
-      if (this.question.questionId === 1) {
-        return
-      }
-      this.getQuestionById(--this.question.questionId)
-    },
-    handleSelect (item) {
-      this.getQuestionById(item.questionId)
-    }
-  }
-}
-</script>
+</style>

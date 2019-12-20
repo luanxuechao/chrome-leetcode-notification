@@ -24,7 +24,7 @@ export async function getAllQuestions () {
   return result.data.stat_status_pairs
 }
 export async function getQuestionByDescription (id) {
-  const question = await getQuestionById(id)
+  const question = await findQuestionById(id)
   if (!question) {
     return {}
   }
@@ -37,9 +37,13 @@ export async function getQuestionByDescription (id) {
   return questionDetail.data.data
 }
 
-export async function getQuestionById (id) {
+export async function findQuestionById (id) {
   let results = await getAllQuestions()
-  return _.find(results, (question) => { return question.stat.frontend_question_id === id })
+  console.log(results)
+  console.log(id)
+  const ret = _.find(results, (question) => { return question.stat.frontend_question_id === id })
+  console.log(ret)
+  return ret
 }
 export async function getAllQuestionsLength () {
   let results = await getAllQuestions()
@@ -47,5 +51,28 @@ export async function getAllQuestionsLength () {
 }
 export async function fuzzySearch (id) {
   let results = await getAllQuestions()
-  return _.filter(results, (question) => { return question.stat.frontend_question_id.toString().indexOf(id) === 0 })
+  const values = []
+
+  for (const result of results) {
+    if (values.length > 10) {
+      break
+    }
+    if (result.stat.frontend_question_id.toString().indexOf(id) === 0) {
+      values.push({value: `${result.stat.frontend_question_id}.${result.stat.question__title}`, questionId: result.stat.frontend_question_id})
+    }
+  }
+  results = null
+  return values
+}
+export async function refreshTotal () {
+  const result = await HttpServer({
+    url: '/api/problems/all/',
+    method: 'get'
+  })
+  result.data.stat_status_pairs = _.orderBy(result.data.stat_status_pairs, function (a) {
+    return a.stat.frontend_question_id
+  })
+  if (result.data) {
+    await chromep.storage.local.set({'stat_status_pairs': JSON.stringify(result.data.stat_status_pairs)})
+  }
 }
