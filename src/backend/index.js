@@ -32,7 +32,7 @@ var createTimeout = async function (min, title, message) {
       type: 'basic',
       title,
       message,
-      iconUrl: '../icons/16.png'
+      iconUrl: '../icons/96.png'
     }
 
     chrome.notifications.create('notify_alert1', opt, function (id) {

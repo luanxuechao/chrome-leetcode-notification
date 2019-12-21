@@ -5,7 +5,7 @@ module.exports = {
   description: 'Vue.js Chrome Extension Template (wcer)',
   author: 'yura',
   manifest_version: 2,
-  icons: { '16': 'icons/16.png', '128': 'icons/128.png' },
+  icons: { '16': 'icons/16.png', '96': 'icons/96.png' },
   permissions: [
     '<all_urls>',
     '*://*/*',
