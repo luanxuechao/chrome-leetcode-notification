@@ -2,6 +2,10 @@
     div(class="pop")
       div(class="question")
         div(class="question_header")
+          div(class="header_bar")
+            el-button(type="text"  @click="star()" icon="el-icon-star-off" style="font-size:20px")
+            el-button(type="text" @click="set()" icon="el-icon-setting" style="font-size:20px")
+            
           div(class="question_title") {{question.questionFrontendId}}. {{question.title}}
           div(class="question_tag")
             el-tag(type="success" style="margin:0 3px" v-show ="difficulty === 'Easy'"  size ="mini" effect="plain") Easy
@@ -75,8 +79,6 @@ export default {
       })
     },
     querySearch (queryString, cb) {
-      console.log(queryString)
-
       if (!queryString) {
         const result = []
         return cb(result)
@@ -91,7 +93,6 @@ export default {
       let timer = setInterval(() => {
         let ispeed = Math.floor(-that.scrollTop / 5)
         document.documentElement.scrollTop = document.body.scrollTop = that.scrollTop + ispeed
-        console.log(that.scrollTop)
         if (that.scrollTop === 0) {
           clearInterval(timer)
         }
@@ -110,7 +111,6 @@ export default {
     },
     openLeetcode () {
       findQuestionById(parseInt(this.question.questionFrontendId)).then((value) => {
-        console.log(value)
         window.open(`https://leetcode.com/problems/${value.stat.question__title_slug}`)
       })
     },
@@ -132,6 +132,12 @@ export default {
           type: 'success'
         })
       })
+    },
+    star () {
+      window.open(`https://github.com/luanxuechao/chrome-leetcode-notification`)
+    },
+    set () {
+      chrome.tabs.create({ url: 'pages/app.html' })
     }
   }
 }
@@ -145,6 +151,14 @@ export default {
   padding: 8px 0px;
   border-bottom: 1px solid rgb(238, 238, 238);
 }
+.header_bar {
+  float:right;
+  margin-top: -20px;
+}
+.header_bar .el-buttion {
+  
+}
+
 .question_title {
   font-size: 16px;
   color: rgb(33, 33, 33);

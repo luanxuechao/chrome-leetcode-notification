@@ -11,8 +11,9 @@ export async function getAllQuestions () {
     statStatusPairs = questions
     return statStatusPairs
   }
+  const host = await getHost()
   const result = await HttpServer({
-    url: '/api/problems/all/',
+    url: host + '/api/problems/all/',
     method: 'get'
   })
   result.data.stat_status_pairs = _.orderBy(result.data.stat_status_pairs, function (a) {
@@ -29,8 +30,9 @@ export async function getQuestionByDescription (id) {
     return {}
   }
   const body = {'operationName': 'questionData', 'variables': {'titleSlug': question.stat.question__title_slug}, 'query': 'query questionData($titleSlug: String!) {\n  question(titleSlug: $titleSlug) {\n    questionId\n    questionFrontendId\n    boundTopicId\n    title\n    titleSlug\n    content\n    translatedTitle\n    translatedContent\n    isPaidOnly\n    difficulty\n    likes\n    dislikes\n    isLiked\n    similarQuestions\n    contributors {\n      username\n      profileUrl\n      avatarUrl\n      __typename\n    }\n    langToValidPlayground\n    topicTags {\n      name\n      slug\n      translatedName\n      __typename\n    }\n    companyTagStats\n    codeSnippets {\n      lang\n      langSlug\n      code\n      __typename\n    }\n    stats\n    hints\n    solution {\n      id\n      canSeeDetail\n      __typename\n    }\n    status\n    sampleTestCase\n    metaData\n    judgerAvailable\n    judgeType\n    mysqlSchemas\n    enableRunCode\n    enableTestMode\n    envInfo\n    libraryUrl\n    __typename\n  }\n}\n'}
+  const host = await getHost()
   const questionDetail = await HttpServer({
-    url: '/graphql',
+    url: host + '/graphql',
     data: body,
     method: 'POST'
   })
@@ -62,8 +64,9 @@ export async function fuzzySearch (id) {
   return values
 }
 export async function refreshTotal () {
+  const host = await getHost()
   const result = await HttpServer({
-    url: '/api/problems/all/',
+    url: host + '/api/problems/all/',
     method: 'get'
   })
   result.data.stat_status_pairs = _.orderBy(result.data.stat_status_pairs, function (a) {
@@ -72,4 +75,13 @@ export async function refreshTotal () {
   if (result.data) {
     await chromep.storage.local.set({'stat_status_pairs': JSON.stringify(result.data.stat_status_pairs)})
   }
+}
+
+async function getHost () {
+  const ret = await chromep.storage.local.get('options')
+  if (!ret.options) {
+    return 'https://leetcode.com'
+  }
+  const host = JSON.stringify(ret.options).host
+  return host || 'https://leetcode.com'
 }

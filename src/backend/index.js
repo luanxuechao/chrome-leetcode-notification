@@ -1,14 +1,8 @@
 import chromep from 'chrome-promise'
 import * as Question from '../resources/question'
 console.log('background !')
-const options = {
-  open: true,
-  urls: [''],
-  leetcodeHost: 'https://leetcode.com/api',
-  time: 0.1
-}
-const start = false
-var timeout = ''
+
+var timeout = null
 chrome.tabs.onUpdated.addListener(function (id, info, tab) {
   AlertNotification(id)
 })
@@ -16,49 +10,69 @@ chrome.tabs.onActivated.addListener(function (activeInfo) {
   AlertNotification(activeInfo.tabId)
 })
 chrome.runtime.onInstalled.addListener(function () {
+  const options = {
+    switch: true,
+    urls: [],
+    host: 'https://leetcode.com/',
+    timing: 0.1,
+    title: '刷题它不香吗？',
+    message: '还在划水，还不刷题'
+  }
   chromep.storage.local.set({options: JSON.stringify(options)}).then(function () {
     return chromep.storage.local.get('options')
   })
-  Question.getAllQuestions(options.leetcodeHost)
+  Question.getAllQuestions(options.host)
 })
-
-var AlertNotification = async function (tabId) {
-  var currentOptions = await chromep.storage.local.get('options')
-  if (currentOptions && currentOptions.options) {
-    currentOptions.options = JSON.parse(currentOptions.options)
+var createTimeout = async function (min, title, message) {
+  if (timeout) {
+    return
   }
-  if (start ||
-    (currentOptions && currentOptions.options && !currentOptions.options.open)) {
-    return null
-  }
-  var min = (currentOptions.options.time || 1) * 60 * 1000
-  timeout = await creteTimeout(min)
-  return timeout
-//   chromep.storage.local.set({foo: 'bar'}).then(function () {
-//     alert('foo set')
-//     return chromep.storage.local.get('foo')
-//   }).then(function (items) {
-//     alert(JSON.stringify(items)) // => {"foo":"bar"}
-//   })
-//   chrome.tabs.get(tabId, function (tab) {
-//     // alert(tabId)
-//     chrome.tabs.executeScript(tabId, {
-//       file: 'test.js'
-//     })
-//   })
-}
-var creteTimeout = async function (min) {
-  return window.setTimeout(function () {
+  return window.setInterval(function () {
     var opt = {
       type: 'basic',
-      title: '通知的title!',
-      message: 'aaa',
+      title,
+      message,
       iconUrl: '../icons/16.png'
     }
+
     chrome.notifications.create('notify_alert1', opt, function (id) {
       setTimeout(function () {
         chrome.notifications.clear(id, function () {})
       }, 3000)
     })
   }, min)
+}
+var AlertNotification = async function (tabId) {
+  var currentOptions = await chromep.storage.local.get('options')
+
+  if (currentOptions && currentOptions.options) {
+    currentOptions.options = JSON.parse(currentOptions.options)
+  }
+  if (currentOptions && currentOptions.options && !currentOptions.options.switch) {
+    return null
+  }
+  const tabInfo = await chromep.tabs.get(tabId)
+  let matchUrl = false
+  if (tabInfo && tabInfo.url) {
+    for (const url of currentOptions.options.urls) {
+      const reg = new RegExp(url)
+      if (reg.test(tabInfo.url)) {
+        matchUrl = true
+        break
+      }
+    }
+    // 定时器已生成 无需关闭
+    if (timeout && matchUrl) {
+      return
+    }
+    // 当前url 不匹配 关闭定时器
+    if (!matchUrl && timeout) {
+      window.clearInterval(timeout)
+      timeout = null
+      return
+    }
+    var min = (currentOptions.options.timing || 1) * 60 * 1000
+    timeout = await createTimeout(min, currentOptions.options.title, currentOptions.options.message)
+    return timeout
+  }
 }
