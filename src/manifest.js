@@ -1,11 +1,11 @@
 
 module.exports = {
-  name: 'Vue Extension',
+  name: 'chrome-leetcode-notification',
   version: '1.0.0',
-  description: 'Vue.js Chrome Extension Template (wcer)',
-  author: 'yura',
+  description: 'vue.js chrome extension of leetcode\'s notification',
+  author: 'luanxuechaowd@gmail.com',
   manifest_version: 2,
-  icons: { '16': 'icons/16.png', '96': 'icons/96.png' },
+  icons: { '16': 'icons/16.png', '32': 'icons/32.png', '128': 'icons/128.png' },
   permissions: [
     '<all_urls>',
     '*://*/*',
